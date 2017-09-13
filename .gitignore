@@ -1,0 +1,4 @@
+*.pyc
+*.db
+main.json
+fbook.json

@@ -5,6 +5,7 @@ from .utils import (two_step_dominance,
 from .team import Team
 from .settings import Settings
 from .matchup import Matchup
+from .draft import Draft
 from .exception import (PrivateLeagueException,
                         InvalidLeagueException,
                         UnknownLeagueException, )
@@ -21,7 +22,7 @@ class League(object):
         self.swid = swid
         self.cookies = {}
         self._fetch_league()
-
+        self.draft_results = {}
     def __repr__(self):
         return 'League(%s, %s)' % (self.league_id, self.year, )
 
@@ -53,7 +54,19 @@ class League(object):
 
         self._fetch_teams(data)
         self._fetch_settings(data)
+        self._fetch_draft(self.league_id, self.year, self.cookies)
+    def _fetch_draft(self, league_id, year, cookies):
+        params = {
+            'leagueId': self.league_id,
+            'seasonId': self.year,
+            'count': '5000'
+        }
 
+        r = requests.get('%srecentActivity' % (self.ENDPOINT, ), params=params, cookies=self.cookies)
+        data = r.json()
+        
+        
+        
     def _fetch_teams(self, data):
         '''Fetch teams in league'''
         teams = data['leaguesettings']['teams']

@@ -1,6 +1,8 @@
+import json
+
 import groupPost
 import scrapeESPN
-import json
+
 
 def main_keeper():
     with open('configs/main.json') as data_file:    
@@ -27,6 +29,10 @@ def main_regular():
 def main():
     main_keeper()
     main_regular()
-    
-main()
 
+
+if __name__ == '__main__':
+  main()
+
+def lambda_handler(event, context):
+    main()

@@ -1,4 +1,7 @@
 *.pyc
 *.db
-main.json
-fbook.json
+src/main.json
+src/fbook.json
+.idea/
+lib/
+output.zip

@@ -1,8 +1,10 @@
-import espnff
-import sqlite3
-from datetime import datetime
-from datetime import date
 import os
+import sqlite3
+from datetime import date
+
+import espnff
+
+
 def create_tables(conn):
     cursor = conn.cursor()
     cursor.execute('''CREATE TABLE teams(team_id integer
@@ -29,7 +31,8 @@ def create_tables(conn):
                     ,losing_team_name text
                     ,losing_score real)
     ''')
-    cursor.execute('''create table awards (award text, winner text, datapoint text, week int, s integer, award_type text)''')
+    cursor.execute(
+        '''create table awards (award text, winner text, datapoint text, week int, s integer, award_type text)''')
     cursor.execute('''Create table calendar (start_dt text, end_dt text, wk integer)''')
     cursor.execute('''with cte as (Select '2017-09-07' as start_dt, '2017-09-14' as end_dt, 1 as wk
                                     union all
@@ -46,7 +49,8 @@ def create_tables(conn):
     conn.commit()
     return conn
 
-def populate_tables(conn, league_id, year, espn_s2, swid):    
+
+def populate_tables(conn, league_id, year, espn_s2, swid):
     cursor = conn.cursor()
     league = espnff.League(league_id, year, espn_s2, swid)
     for team in league.teams:
@@ -54,25 +58,29 @@ def populate_tables(conn, league_id, year, espn_s2, swid):
         name = team.team_name
         abbrev = team.team_abbrev
         owner = team.owner
-        cursor.execute('insert into teams (team_id, team_name, team_abbrev, team_owner) values (?,?,?,?)',(team.team_id, team.team_name, team.team_abbrev, team.owner))
-    
+        cursor.execute('insert into teams (team_id, team_name, team_abbrev, team_owner) values (?,?,?,?)',
+                       (team.team_id, team.team_name, team.team_abbrev, team.owner))
+
     today = str(date.today())
-    
-    for row in cursor.execute('select wk from calendar where start_dt <= ? and ? < end_dt',(today,today)): #for each week
+
+    for row in cursor.execute('select wk from calendar where start_dt <= ? and ? < end_dt',
+                              (today, today)):  # for each week
         i = row[0]
         scoreboard = league.scoreboard(week=i)
-        for matchup in scoreboard:     
-            winning_team_id = matchup.home_team.team_id if matchup.home_score > matchup.away_score else matchup.away_team.team_id                    #for each matchup
+        for matchup in scoreboard:
+            winning_team_id = matchup.home_team.team_id if matchup.home_score > matchup.away_score else matchup.away_team.team_id  # for each matchup
             winning_team_name = matchup.home_team.team_name if matchup.home_score > matchup.away_score else matchup.away_team.team_name
             winning_score = matchup.home_score if matchup.home_score > matchup.away_score else matchup.away_score
-            losing_team_id = matchup.home_team.team_id if matchup.home_score < matchup.away_score else matchup.away_team.team_id                    #for each matchup
+            losing_team_id = matchup.home_team.team_id if matchup.home_score < matchup.away_score else matchup.away_team.team_id  # for each matchup
             losing_team_name = matchup.home_team.team_name if matchup.home_score < matchup.away_score else matchup.away_team.team_name
             losing_score = matchup.home_score if matchup.home_score < matchup.away_score else matchup.away_score
-            cursor.execute('insert into matchups (week, winning_team_id, winning_team_name, winning_score, losing_team_id, losing_team_name, losing_score) values (?,?,?,?,?,?,?)',(i, winning_team_id, winning_team_name, winning_score, losing_team_id, losing_team_name, losing_score))
-            
-            for team in (matchup.home_team, matchup.away_team):                                            #for each team in matchup
+            cursor.execute(
+                'insert into matchups (week, winning_team_id, winning_team_name, winning_score, losing_team_id, losing_team_name, losing_score) values (?,?,?,?,?,?,?)',
+                (i, winning_team_id, winning_team_name, winning_score, losing_team_id, losing_team_name, losing_score))
+
+            for team in (matchup.home_team, matchup.away_team):  # for each team in matchup
                 roster = team.get_roster(week=i)
-                for player in roster:                                                                      #for each player on team
+                for player in roster:  # for each player on team
                     player_id = player['player_id']
                     name = player['name']
                     position = player['position']
@@ -81,14 +89,18 @@ def populate_tables(conn, league_id, year, espn_s2, swid):
                     player_pro_team = player['pro_team_id']
                     health_status = player['health_status']
                     week = i
-                    cursor.execute('insert into rosters (team_id, team_name, week, player_id, player_name, player_position, player_pro_team, actual_score, projected_score, health_status) values (?,?,?,?,?,?,?,?,?,?)',(team.team_id, team.team_name, week, player_id, name, position, player_pro_team, actual_score, projected_score, health_status))
+                    cursor.execute(
+                        'insert into rosters (team_id, team_name, week, player_id, player_name, player_position, player_pro_team, actual_score, projected_score, health_status) values (?,?,?,?,?,?,?,?,?,?)',
+                        (team.team_id, team.team_name, week, player_id, name, position, player_pro_team, actual_score,
+                         projected_score, health_status))
     conn.commit()
     return conn
 
+
 def run_awards(conn):
     cursor = conn.cursor()
-    
-    #Eked it Out
+
+    # Eked it Out
     cursor.execute('''insert into awards (winner, datapoint, award, week, s, award_type)
                     Select 
                         winning_team_name as winner
@@ -101,7 +113,7 @@ def run_awards(conn):
                     order by winning_score - losing_score
                     limit 1
                     ''')
-    #Suicide Watch
+    # Suicide Watch
     cursor.execute('''insert into awards (winner, datapoint, award, week, s, award_type)
                     Select 
                         losing_team_name as winner
@@ -114,7 +126,7 @@ def run_awards(conn):
                     order by winning_score - losing_score
                     limit 1
                     ''')
-    #Rack em up
+    # Rack em up
     cursor.execute('''Insert into awards (winner, datapoint, award, week, s, award_type)
                     Select
                         t.team_name as winner
@@ -129,8 +141,8 @@ def run_awards(conn):
                     order by score desc
                     limit 1
                     ''')
-    
-    #Pine Riding Cowboy
+
+    # Pine Riding Cowboy
     cursor.execute('''Insert into awards (winner, datapoint, award, week, s, award_type)
                     Select  
                         t.team_name as winner
@@ -152,7 +164,7 @@ def run_awards(conn):
                     order by bench_points desc
                     limit 1
                     ''')
-    #mercy rule
+    # mercy rule
     cursor.execute('''Insert into awards (winner, datapoint, award, week, s, award_type)
                     select
                         t.team_name as winner
@@ -171,7 +183,7 @@ def run_awards(conn):
                     ) yyz
                         join teams t on t.team_id = yyz.loser
                     ''')
-    #it's better to be lucky than good
+    # it's better to be lucky than good
     cursor.execute('''insert into awards (winner, datapoint, award, week, s, award_type)
                     Select 
                         t.team_name as winner
@@ -193,7 +205,7 @@ def run_awards(conn):
                         join teams t on t.team_id = yyz.winning_team_id
                     where a.score > yyz.winning_score
                     ''')
-    #life's not fair
+    # life's not fair
     cursor.execute('''insert into awards (winner, datapoint, award, week, s, award_type)
                     Select 
                         t.team_name as winner
@@ -215,7 +227,7 @@ def run_awards(conn):
                         join teams t on t.team_id = yyz.losing_team_id
                     where a.score < yyz.losing_score
                     ''')
-    #dud of the week
+    # dud of the week
     cursor.execute('''insert into awards (winner, datapoint, award, week, s, award_type)
                     Select
                         t.team_name as winner
@@ -238,7 +250,7 @@ def run_awards(conn):
                     ) yyz
                         join teams t on t.team_id = yyz.team_id
                      ''')
-    #stud of the week
+    # stud of the week
     cursor.execute('''insert into awards (winner, datapoint, award, week, s, award_type)
                     Select
                         t.team_name as winner
@@ -260,8 +272,8 @@ def run_awards(conn):
                         limit 1
                     ) yyz
                         join teams t on t.team_id = yyz.team_id
-                    ''')                     
-    #flex appeal
+                    ''')
+    # flex appeal
     cursor.execute('''insert into awards(winner,datapoint, award, week, s, award_type)
                     Select
                         t.team_name as winner
@@ -281,8 +293,8 @@ def run_awards(conn):
                     limit 1
                     ) yyz 
                         join teams t on t.team_id = yyz.team_id
-                    ''')  
-    #the little engine that literally can't even
+                    ''')
+    # the little engine that literally can't even
     cursor.execute('''insert into awards (winner, datapoint, award, week, s, award_type)
                     Select
                         t.team_name as winner
@@ -302,7 +314,7 @@ def run_awards(conn):
                     ) yyz 
                         join teams t on t.team_id = yyz.losing_team_id
                 ''')
-    #Fab Five
+    # Fab Five
     cursor.execute('''insert into awards (winner, datapoint, award, week, s, award_type)
                     Select
                         t.team_name as winner
@@ -323,8 +335,8 @@ def run_awards(conn):
                         ) cts
                         join teams t on t.team_id = cts.team_id
                     ''')
-    #Goose Egg
-    cursor.execute ('''insert into awards (winner, datapoint, award, week, s, award_type)
+    # Goose Egg
+    cursor.execute('''insert into awards (winner, datapoint, award, week, s, award_type)
                     Select
                         t.team_name
                         ,player_name as datapoint
@@ -342,7 +354,7 @@ def run_awards(conn):
                         ) cts
                         join teams t on t.team_id = cts.team_id
                      ''')
-    #maybe no one
+    # maybe no one
     cursor.execute('''insert into awards (winner, datapoint, award, week, s, award_type)
                     Select
                         t.team_name
@@ -356,7 +368,7 @@ def run_awards(conn):
                         join teams t on t.team_id = m.losing_team_id 
                     where abs(z.actual_score) > m.margin
                     ''')
-    #roster fail
+    # roster fail
     cursor.execute('''insert into awards (winner, datapoint, award, week, s, award_type)
                     select
                         t.team_name as winner
@@ -375,7 +387,7 @@ def run_awards(conn):
                     ) yyz
                         join teams t on t.team_id = yyz.team_id
                     ''')
-    #never tell me the odds
+    # never tell me the odds
     cursor.execute('''insert into awards (winner, datapoint, award, week, s, award_type)
                     select 
                         tw.team_name as winner
@@ -395,10 +407,12 @@ def run_awards(conn):
                     ''')
     conn.commit()
     return conn
-    
+
+
 def view_awards(conn):
     cursor = conn.cursor()
-    cursor.execute('''Select award, winner, datapoint, week, award_type from awards order by award_type, s, award, winner''')
+    cursor.execute(
+        '''Select award, winner, datapoint, week, award_type from awards order by award_type, s, award, winner''')
     r = ''
     lastaward = ''
     thisaward = ''
@@ -411,6 +425,7 @@ def view_awards(conn):
         lastaward = thisaward
     return r
 
+
 def drop_tables(conn):
     cursor = conn.cursor()
     cursor.execute('''drop table if exists awards''')
@@ -422,6 +437,7 @@ def drop_tables(conn):
     conn.commit()
     return conn
 
+
 def get_data(league_id, year, swid, espn_s2):
     conn_file = 'data.db'
     try:
@@ -431,7 +447,7 @@ def get_data(league_id, year, swid, espn_s2):
     conn = sqlite3.connect(conn_file)
     conn = drop_tables(conn)
     conn = create_tables(conn)
-    conn = populate_tables(conn,league_id, year, espn_s2, swid)
+    conn = populate_tables(conn, league_id, year, espn_s2, swid)
     conn = run_awards(conn)
     r = view_awards(conn)
     conn.commit()

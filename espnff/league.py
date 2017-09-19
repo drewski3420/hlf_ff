@@ -5,7 +5,7 @@ from .utils import (two_step_dominance,
 from .team import Team
 from .settings import Settings
 from .matchup import Matchup
-from .draft import Draft
+#from .draft import Draft
 from .exception import (PrivateLeagueException,
                         InvalidLeagueException,
                         UnknownLeagueException, )
@@ -22,7 +22,7 @@ class League(object):
         self.swid = swid
         self.cookies = {}
         self._fetch_league()
-        self.draft_results = {}
+ #       self.draft = {}
     def __repr__(self):
         return 'League(%s, %s)' % (self.league_id, self.year, )
 
@@ -54,19 +54,7 @@ class League(object):
 
         self._fetch_teams(data)
         self._fetch_settings(data)
-        self._fetch_draft(self.league_id, self.year, self.cookies)
-    def _fetch_draft(self, league_id, year, cookies):
-        params = {
-            'leagueId': self.league_id,
-            'seasonId': self.year,
-            'count': '5000'
-        }
-
-        r = requests.get('%srecentActivity' % (self.ENDPOINT, ), params=params, cookies=self.cookies)
-        data = r.json()
-        
-        
-        
+ #       self._fetch_draft(self.league_id, self.year, self.cookies)
     def _fetch_teams(self, data):
         '''Fetch teams in league'''
         teams = data['leaguesettings']['teams']
@@ -89,7 +77,39 @@ class League(object):
 
         # sort by team ID
         self.teams = sorted(self.teams, key=lambda x: x.team_id, reverse=False)
-
+#    def fetch_draft():
+#       params = {
+#            'leagueId': self.league_id,
+#            'seasonId': self.year,
+#            'count': '5000'
+#        }
+#        r = requests.get('%srecentActivity' % (self.ENDPOINT, ), params=params, cookies=self.cookies)
+#        data = r.json()      
+#        for row in data['items']:
+#            try:
+#                if row['pendingMoveItems'][0]['moveTypeId'] == 5:
+#                    player_id =  row['pendingMoveItems'][0]['playerId']
+#                    team_id = row['pendingMoveItems'][0]['toTeamId']
+#                    selection =  row['pendingMoveItems'][0]['draftOverallSelection']
+#                    self.draft[selection] = {
+#                        'team_id': team_id,
+#                        'player_id': player_id,
+#                        'player': fetch_player(player_id)
+#                    }
+#            except:
+#                pass    
+#    def fetch_player(player_id):
+#        params = {
+#            'leagueId': self.league_id,
+#            'seasonId': self.year,
+#            'playerId': player_id
+#        }
+#        r = requests.get('%splayerInfo' % (self.ENDPOINT, ), params=params, cookies=self.cookies)
+#        data = r.json()
+#        try:
+#            return data['playerInfo']['players'][0]['player']['firstName'] + ' ' + data['playerInfo']['players'][0]['player']['lastName']
+#        except:
+#            pass
     def _fetch_settings(self, data):
         self.settings = Settings(data)
 

@@ -338,7 +338,7 @@ def run_awards(conn):
                                 ,team_id
                             from rosters
                             where actual_score = 0
-                            and player_position <> 'Bench'
+                            and player_position not in ('Bench','Other','IR')
                         ) cts
                         join teams t on t.team_id = cts.team_id
                      ''')
